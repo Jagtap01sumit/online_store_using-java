@@ -1,8 +1,11 @@
-import java.util.ArrayList;
 import java.util.*;
-import java.util.List;
-import java.util.UUID;
 import java.time.LocalDate;
+
+class ProductOutOfStockException extends RuntimeException {
+    public ProductOutOfStockException(String message) {
+        super(message);
+    }
+}
 
 class Product {
     private final String productId;
@@ -118,7 +121,7 @@ class Store {
                 }
             }
         } else {
-            throw new IllegalArgumentException("Product is out of stock");
+            throw new ProductOutOfStockException("Product is out of stock");
         }
     }
 
@@ -187,13 +190,12 @@ public class Main {
     public static void main(String[] args) {
         Store store = new Store();
 
-        // Add products to the store
         Product product1 = new Product(UUID.randomUUID().toString(), "mobile", 100, 1000);
         Product product2 = new Product(UUID.randomUUID().toString(), "shoes", 100, 100);
         store.addProduct(product1);
         store.addProduct(product2);
 
-        List<Customer> customers = new ArrayList<>();
+        Map<Customer, String> customerMap = new HashMap<>();
         Customer currentCustomer = null;
 
         Scanner sc = new Scanner(System.in);
@@ -205,13 +207,14 @@ public class Main {
             System.out.println("2. Buy a product");
             System.out.println("3. My Prev Order");
             System.out.println("4. Search Particular Product / stock");
-            System.out.println("5. Create New Customer");
-            System.out.println("6. Check Account Details");
+            System.out.println("5. Sign Up");
+            System.out.println("6. Sign In");
+            System.out.println("7. Check Account Details");
             System.out.println("Enter 0 to exit");
             System.out.println("Enter your choice: ");
 
             userChoice = sc.nextInt();
-            sc.nextLine(); // Consume newline
+            sc.nextLine();
 
             switch (userChoice) {
                 case 1:
@@ -219,7 +222,7 @@ public class Main {
                     break;
                 case 2:
                     if (currentCustomer == null) {
-                        System.out.println("Unauthorized User , Please SignUp");
+                        System.out.println("Unauthorized User , Please Sign In");
                         break;
                     }
                     store.displayProducts();
@@ -227,6 +230,7 @@ public class Main {
                     String productName = sc.nextLine();
                     System.out.println("Enter quantity: ex.1 ");
                     int quantity = sc.nextInt();
+                    sc.nextLine();
                     if (store.isStockAvailable(productName.toLowerCase(), quantity)) {
                         store.buyProduct(currentCustomer, productName.toLowerCase(), quantity);
                     } else {
@@ -235,7 +239,7 @@ public class Main {
                     break;
                 case 3:
                     if (currentCustomer == null) {
-                        System.out.println("Unauthorized User , Please SignUp");
+                        System.out.println("Unauthorized User , Please Sign In");
                         break;
                     }
                     System.out.println("Your Previous Orders are: ");
@@ -250,16 +254,49 @@ public class Main {
                 case 5:
                     System.out.println("Enter customer name:");
                     String customerName = sc.nextLine();
+                    boolean customerExists = false;
+                    for (Customer customer : customerMap.keySet()) {
+                        if (customer.getCustomerName().equalsIgnoreCase(customerName)) {
+                            customerExists = true;
+                            break;
+                        }
+                    }
+                    if (customerExists) {
+                        System.out.println("Customer already exists. Please Sign In.");
+                        break;
+                    }
+                    System.out.println("Enter password:");
+                    String password = sc.nextLine();
                     System.out.println("Enter initial credits:");
                     double credits = sc.nextDouble();
+                    sc.nextLine();
                     Customer newCustomer = new Customer(UUID.randomUUID().toString(), customerName, credits);
-                    customers.add(newCustomer);
+                    customerMap.put(newCustomer, password);
                     currentCustomer = newCustomer;
-                    System.out.println("Created and selected customer: " + currentCustomer.getCustomerName());
+                    System.out.println("Created and signed in as customer: " + currentCustomer.getCustomerName());
                     break;
                 case 6:
+                    System.out.println("Enter customer name:");
+                    customerName = sc.nextLine();
+                    System.out.println("Enter password:");
+                    String enteredPassword = sc.nextLine();
+                    boolean user = false;
+                    for (Customer cus : customerMap.keySet()) {
+                        if (cus.getCustomerName().equalsIgnoreCase(customerName) &&
+                                customerMap.get(cus).equals(enteredPassword)) {
+                            currentCustomer = cus;
+                            user = true;
+                            System.out.println("Signed in as customer: " + currentCustomer.getCustomerName());
+                            break;
+                        }
+                    }
+                    if (!user) {
+                        System.out.println("Invalid username or password.");
+                    }
+                    break;
+                case 7:
                     if (currentCustomer == null) {
-                        System.out.println("Unauthorized User , Please SignUp");
+                        System.out.println("Unauthorized User , Please Sign In");
                         break;
                     }
                     System.out.println("Name: " + currentCustomer.getCustomerName());
